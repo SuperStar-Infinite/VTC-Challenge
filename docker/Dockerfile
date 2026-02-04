@@ -8,6 +8,13 @@ RUN apk --no-cache add php82 php82-fpm php82-mysqli php82-json php82-openssl php
 
 RUN ln -s /usr/bin/php82 /usr/bin/php
 
+# Create www-data user and group (Alpine doesn't have it by default)
+RUN addgroup -g 82 -S www-data && \
+    adduser -u 82 -D -S -G www-data www-data
+
+# Create PHP-FPM config directory if it doesn't exist
+RUN mkdir -p /etc/php82/php-fpm.d
+
 # Enable PHP extensions (Alpine PHP 8.2 uses /etc/php82/conf.d/)
 RUN ln -sf /etc/php82/php.ini /etc/php82/conf.d/99-custom.ini || true
 
