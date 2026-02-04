@@ -11,6 +11,8 @@ class IndexController extends AbstractController
 {
     /**
      * @Route("/index", name="app_index")
+     * @Route("/", name="app_home")
+     * @Route("/confirm", name="app_confirm_page")
      */
     public function index(): Response
     {
