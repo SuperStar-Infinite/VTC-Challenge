@@ -12,6 +12,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\String\ByteString;
 
 #[Route('/api')]
@@ -21,6 +24,7 @@ class AuthController extends AbstractController
         private EntityManagerInterface $em,
         private UserRepository $userRepository,
         private UserPasswordHasherInterface $passwordHasher,
+        private TokenStorageInterface $tokenStorage,
     ) {
     }
 
@@ -74,7 +78,42 @@ class AuthController extends AbstractController
         return $this->json(['message' => 'Account confirmed, you can now login.']);
     }
 
+    #[Route('/login', name: 'api_login', methods: ['POST'])]
+    public function login(Request $request): JsonResponse
+    {
+        $data = json_decode((string) $request->getContent(), true) ?? [];
+        $email = isset($data['email']) ? (string) $data['email'] : '';
+        $password = isset($data['password']) ? (string) $data['password'] : '';
+
+        if ($email === '' || $password === '') {
+            return $this->json(['error' => 'Email and password are required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $this->userRepository->findOneByEmail($email);
+        if ($user === null || !$this->passwordHasher->isPasswordValid($user, $password)) {
+            return $this->json(['error' => 'Invalid credentials'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (!$user->isConfirmed()) {
+            return $this->json(['error' => 'Account not confirmed'], Response::HTTP_FORBIDDEN);
+        }
+
+        // Manually authenticate the user in the session
+        $token = new UsernamePasswordToken($user, 'main', $user->getRoles());
+        $this->tokenStorage->setToken($token);
+        $request->getSession()->set('_security_main', serialize($token));
+
+        return $this->json([
+            'message' => 'Login successful',
+            'user' => [
+                'email' => $user->getEmail(),
+                'confirmed' => $user->isConfirmed(),
+            ],
+        ]);
+    }
+
     #[Route('/me', name: 'api_me', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function me(): JsonResponse
     {
         $user = $this->getUser();
