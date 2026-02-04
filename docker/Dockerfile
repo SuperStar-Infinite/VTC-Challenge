@@ -8,13 +8,16 @@ RUN apk --no-cache add php82 php82-fpm php82-mysqli php82-json php82-openssl php
 
 RUN ln -s /usr/bin/php82 /usr/bin/php
 
+# Enable PHP extensions (Alpine PHP 8.2 uses /etc/php82/conf.d/)
+RUN ln -sf /etc/php82/php.ini /etc/php82/conf.d/99-custom.ini || true
+
 # Configure nginx
-COPY config/xdebug.ini /etc/php7/conf.d/xdebug.ini
+COPY config/xdebug.ini /etc/php82/conf.d/xdebug.ini
 COPY config/nginix/template/nginx.template.conf /etc/nginx/nginx.conf
 
 # Configure PHP-FPM
-COPY config/fpm-pool.conf /etc/php7/php-fpm.d/www.conf
-COPY config/php.ini /etc/php7/conf.d/custom.ini
+COPY config/fpm-pool.conf /etc/php82/php-fpm.d/www.conf
+COPY config/php.ini /etc/php82/conf.d/custom.ini
 
 # Install composer from the official image
 COPY --from=composer /usr/bin/composer /usr/bin/composer
