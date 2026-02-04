@@ -50,10 +50,11 @@ class AuthController extends AbstractController
         $this->em->flush();
 
         // Persist a "fake" email in var/emails as per challenge requirements
-        $this->storeConfirmationEmail($email, $token);
+        $confirmationLink = $this->storeConfirmationEmail($email, $token);
 
         return $this->json([
             'message' => 'User registered. Please confirm your email.',
+            'confirmationLink' => $confirmationLink,
         ], Response::HTTP_CREATED);
     }
 
@@ -87,7 +88,7 @@ class AuthController extends AbstractController
         ]);
     }
 
-    private function storeConfirmationEmail(string $email, string $token): void
+    private function storeConfirmationEmail(string $email, string $token): string
     {
         $dir = $this->getParameter('kernel.project_dir') . '/var/emails';
         if (!is_dir($dir)) {
@@ -99,6 +100,8 @@ class AuthController extends AbstractController
 
         $filename = $dir . '/confirmation_' . time() . '_' . md5($email . $token) . '.txt';
         file_put_contents($filename, $body);
+
+        return $link;
     }
 }
 

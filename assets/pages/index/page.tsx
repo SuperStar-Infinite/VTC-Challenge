@@ -285,6 +285,7 @@ const IndexPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [confirmationLink, setConfirmationLink] = useState<string | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [filterStatus, setFilterStatus] = useState<"" | NoteStatus>("");
   const [filterCategory, setFilterCategory] = useState<string>("");
@@ -313,6 +314,9 @@ const IndexPage: React.FC = () => {
       api<{ message: string }>(`/api/confirm/${encodeURIComponent(token)}`)
         .then((data) => {
           setInfo(data.message || "Account confirmed. You can now login.");
+          setView("confirm-info");
+          // Clear the token from URL
+          window.history.replaceState({}, document.title, window.location.pathname);
         })
         .catch((e) => {
           setError(e.message || "Failed to confirm account");
@@ -364,13 +368,14 @@ const IndexPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await api<{ message: string }>("/api/register", {
+      const data = await api<{ message: string; confirmationLink: string }>("/api/register", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
       setView("confirm-info");
+      setConfirmationLink(data.confirmationLink || null);
       setInfo(
-        "Registration successful. A confirmation email has been written to var/emails. Open the latest file, copy the link and paste it in your browser to confirm."
+        "Registration successful! Click the confirmation link below to activate your account, then you can login."
       );
     } catch (e: any) {
       setError(e.message || "Registration failed");
@@ -386,22 +391,25 @@ const IndexPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await fetch("/api/login", {
+      const loginResponse = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ email, password }),
-      }).then(async (response) => {
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error((data && (data as any).message) || "Login failed");
-        }
-        return response;
       });
 
+      if (!loginResponse.ok) {
+        const data = await loginResponse.json().catch(() => ({}));
+        const errorMsg = (data && (data as any).message) || 
+                        (data && (data as any).error) || 
+                        `Login failed (${loginResponse.status})`;
+        throw new Error(errorMsg);
+      }
+
+      // Check if account is confirmed
       const me = await api<{ email: string; confirmed: boolean }>("/api/me");
-      if (!me.confirmed) {
-        setError("Your account is not confirmed yet.");
+      if (!me || !me.confirmed) {
+        setError("Your account is not confirmed yet. Please confirm your account first.");
         setView("confirm-info");
         return;
       }
@@ -466,12 +474,67 @@ const IndexPage: React.FC = () => {
   };
 
   const renderAuthContent = () => {
-    if (view === "register" || view === "confirm-info") {
+    if (view === "confirm-info") {
+      return (
+        <>
+          <SectionTitle>Confirm your account</SectionTitle>
+          <Subtitle>
+            Click the link below to confirm your account. After confirmation, you can login.
+          </Subtitle>
+          {confirmationLink && (
+            <div style={{ marginTop: 16, marginBottom: 16 }}>
+              <a
+                href={confirmationLink}
+                style={{
+                  display: "inline-block",
+                  padding: "12px 24px",
+                  backgroundColor: "#38bdf8",
+                  color: "#0f172a",
+                  borderRadius: "8px",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                }}
+              >
+                Confirm Account
+              </a>
+            </div>
+          )}
+          {!confirmationLink && (
+            <InfoText style={{ marginTop: 16 }}>
+              If you have a confirmation link, paste it in your browser address bar.
+            </InfoText>
+          )}
+          <ButtonRow style={{ marginTop: 24 }}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setView("login")}
+            >
+              Go to Login
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setView("register");
+                setConfirmationLink(null);
+                setInfo(null);
+              }}
+            >
+              Register another account
+            </Button>
+          </ButtonRow>
+        </>
+      );
+    }
+
+    if (view === "register") {
       return (
         <>
           <SectionTitle>Create your account</SectionTitle>
           <Subtitle>
-            Register with an email and password. We will generate a confirmation email file for you.
+            Register with an email and password. We will generate a confirmation link for you.
           </Subtitle>
           <Form onSubmit={handleRegister}>
             <Label>
