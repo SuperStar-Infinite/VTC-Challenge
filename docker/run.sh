@@ -26,7 +26,12 @@ else
     [ -f /etc/php7/conf.d/xdebug.off ] && mv /etc/php7/conf.d/xdebug.off /etc/php7/conf.d/xdebug.ini
 fi
 
-runConsoleSymfonyCommand "cache:clear"
+# Only run cache:clear if vendor directory exists (dependencies installed)
+if [ -d "vendor" ]; then
+    runConsoleSymfonyCommand "cache:clear"
+else
+    echo "$(timestamp):[run] Vendor directory not found, skipping cache:clear. Run 'composer install' first."
+fi
 
 echo "$(timestamp):[run] Running supervisord";
 /usr/bin/supervisord -c ./docker/config/supervisord.conf
