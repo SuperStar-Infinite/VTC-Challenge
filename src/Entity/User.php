@@ -88,6 +88,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getSalt(): ?string
+    {
+        // Modern password hashers don't need a salt, return null
+        return null;
+    }
+
     public function eraseCredentials(): void
     {
         // no-op, but required by interface
