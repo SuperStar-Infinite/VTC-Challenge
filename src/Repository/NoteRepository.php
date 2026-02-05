@@ -35,7 +35,7 @@ class NoteRepository extends ServiceEntityRepository
         // Use the owner ID directly in the query
         $qb = $this->createQueryBuilder('n')
             ->innerJoin('n.owner', 'o')
-            ->andWhere('o.id = :ownerId')
+            ->where('o.id = :ownerId')
             ->setParameter('ownerId', $userId)
             ->orderBy('n.id', 'DESC');
 
