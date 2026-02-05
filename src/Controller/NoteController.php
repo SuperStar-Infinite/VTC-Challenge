@@ -30,6 +30,14 @@ class NoteController extends AbstractController
             return $this->json(null, Response::HTTP_UNAUTHORIZED);
         }
 
+        // Ensure user is managed by entity manager
+        if (!$this->em->contains($user)) {
+            $user = $this->em->getRepository(User::class)->find($user->getId());
+            if ($user === null) {
+                return $this->json(null, Response::HTTP_UNAUTHORIZED);
+            }
+        }
+
         $query = $request->query->get('q');
         $status = $request->query->get('status');
         $category = $request->query->get('category');

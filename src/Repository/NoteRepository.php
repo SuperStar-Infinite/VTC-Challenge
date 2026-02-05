@@ -27,9 +27,16 @@ class NoteRepository extends ServiceEntityRepository
         ?string $status,
         ?string $category
     ): array {
+        $userId = $user->getId();
+        if ($userId === null) {
+            return [];
+        }
+
+        // Use the owner ID directly in the query
         $qb = $this->createQueryBuilder('n')
-            ->andWhere('n.owner = :owner')
-            ->setParameter('owner', $user)
+            ->innerJoin('n.owner', 'o')
+            ->andWhere('o.id = :ownerId')
+            ->setParameter('ownerId', $userId)
             ->orderBy('n.id', 'DESC');
 
         if ($query !== null && $query !== '') {
