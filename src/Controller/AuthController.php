@@ -101,7 +101,12 @@ class AuthController extends AbstractController
         // Manually authenticate the user in the session
         $token = new UsernamePasswordToken($user, 'main', $user->getRoles());
         $this->tokenStorage->setToken($token);
-        $request->getSession()->set('_security_main', serialize($token));
+        
+        // Ensure session is started and save the token
+        $session = $request->getSession();
+        $session->start();
+        $session->set('_security_main', serialize($token));
+        $session->save();
 
         return $this->json([
             'message' => 'Login successful',
@@ -112,8 +117,16 @@ class AuthController extends AbstractController
         ]);
     }
 
+    #[Route('/logout', name: 'api_logout', methods: ['POST'])]
+    public function logout(Request $request): JsonResponse
+    {
+        $this->tokenStorage->setToken(null);
+        $request->getSession()->invalidate();
+
+        return $this->json(['message' => 'Logged out successfully']);
+    }
+
     #[Route('/me', name: 'api_me', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
     public function me(): JsonResponse
     {
         $user = $this->getUser();
