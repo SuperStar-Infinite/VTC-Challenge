@@ -27,17 +27,45 @@ class NoteRepository extends ServiceEntityRepository
         ?string $status,
         ?string $category
     ): array {
-        $userId = $user->getId();
-        if ($userId === null) {
-            return [];
+        // Ensure user is managed by this entity manager
+        $em = $this->getEntityManager();
+        if (!$em->contains($user)) {
+            $user = $em->getRepository(User::class)->find($user->getId());
+            if ($user === null) {
+                return [];
+            }
         }
 
-        // Use the owner ID directly in the query
-        $qb = $this->createQueryBuilder('n')
-            ->innerJoin('n.owner', 'o')
-            ->where('o.id = :ownerId')
-            ->setParameter('ownerId', $userId)
-            ->orderBy('n.id', 'DESC');
+        // Simple DQL query - find notes where owner matches
+        $dql = 'SELECT n FROM App\Entity\Note n WHERE n.owner = :owner ORDER BY n.id DESC';
+        $dqlQuery = $em->createQuery($dql);
+        $dqlQuery->setParameter('owner', $user);
+        $notes = $dqlQuery->getResult();
+        
+        // Apply text search filter
+        if ($query !== null && $query !== '') {
+            $searchLower = mb_strtolower($query);
+            $notes = array_filter($notes, function($note) use ($searchLower) {
+                return strpos(mb_strtolower($note->getTitle()), $searchLower) !== false
+                    || strpos(mb_strtolower($note->getContent()), $searchLower) !== false;
+            });
+        }
+        
+        // Apply status filter
+        if ($status !== null && $status !== '') {
+            $notes = array_filter($notes, function($note) use ($status) {
+                return $note->getStatus() === $status;
+            });
+        }
+        
+        // Apply category filter
+        if ($category !== null && $category !== '') {
+            $notes = array_filter($notes, function($note) use ($category) {
+                return $note->getCategory() === $category;
+            });
+        }
+        
+        return array_values($notes);
 
         if ($query !== null && $query !== '') {
             $qb
