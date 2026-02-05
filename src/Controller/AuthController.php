@@ -112,14 +112,6 @@ class AuthController extends AbstractController
         ]);
     }
 
-    #[Route('/logout', name: 'api_logout', methods: ['POST'])]
-    public function logout(): JsonResponse
-    {
-        // This will be handled by Symfony's security system
-        // But we return a JSON response for the API
-        return $this->json(['message' => 'Logged out successfully']);
-    }
-
     #[Route('/me', name: 'api_me', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function me(): JsonResponse
