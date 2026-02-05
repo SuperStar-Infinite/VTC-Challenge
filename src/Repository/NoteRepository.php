@@ -28,8 +28,8 @@ class NoteRepository extends ServiceEntityRepository
         ?string $category
     ): array {
         $qb = $this->createQueryBuilder('n')
-            ->andWhere('n.owner = :ownerId')
-            ->setParameter('ownerId', $user->getId())
+            ->andWhere('n.owner = :owner')
+            ->setParameter('owner', $user)
             ->orderBy('n.id', 'DESC');
 
         if ($query !== null && $query !== '') {

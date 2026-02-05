@@ -136,8 +136,15 @@ class NoteController extends AbstractController
     private function getAuthenticatedUser(): ?User
     {
         $user = $this->getUser();
+        if (!$user instanceof User || $user->getId() === null) {
+            return null;
+        }
 
-        return $user instanceof User ? $user : null;
+        // Re-fetch the user from database to ensure it's a managed entity
+        // This is necessary because the user from session might be detached
+        $managedUser = $this->em->getRepository(User::class)->find($user->getId());
+        
+        return $managedUser instanceof User ? $managedUser : null;
     }
 
     private function serializeNote(Note $note): array
