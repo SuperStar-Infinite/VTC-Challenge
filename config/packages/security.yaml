@@ -20,7 +20,6 @@ security:
                 check_path: /api/login
                 username_path: email
                 password_path: password
-                success_handler: Symfony\Component\Security\Http\Authentication\DefaultAuthenticationSuccessHandler
             logout:
                 path: /api/logout
                 target: /
