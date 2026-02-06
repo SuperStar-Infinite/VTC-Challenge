@@ -27,6 +27,8 @@ class NoteRepository extends ServiceEntityRepository
         ?string $status,
         ?string $category
     ): array {
+        error_log("Searching notes for user ID: " . $user->getId());
+
         $qb = $this->createQueryBuilder('n')
             ->andWhere('n.owner = :ownerId')
             ->setParameter('ownerId', $user->getId())
@@ -50,7 +52,12 @@ class NoteRepository extends ServiceEntityRepository
                 ->setParameter('category', $category);
         }
 
-        return $qb->getQuery()->getResult();
+        $results = $qb->getQuery()->getResult();
+    
+        // DEBUG: Log how many notes found
+        error_log("Found " . count($results) . " notes");
+        
+        return $results;
     }
 }
 
