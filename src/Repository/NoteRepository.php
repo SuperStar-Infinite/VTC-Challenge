@@ -30,7 +30,8 @@ class NoteRepository extends ServiceEntityRepository
         error_log("Searching notes for user ID: " . $user->getId());
 
         $qb = $this->createQueryBuilder('n')
-            ->andWhere('n.owner = :ownerId')
+            ->join('n.owner', 'u')
+            ->andWhere('u.id = :ownerId')
             ->setParameter('ownerId', $user->getId())
             ->orderBy('n.id', 'DESC');
 
