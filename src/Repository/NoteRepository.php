@@ -63,39 +63,34 @@ class NoteRepository extends ServiceEntityRepository
 
     public function searchForUser(
         User $user,
-        ?string $searchText,
+        ?string $query,
         ?string $status,
         ?string $category
     ): array {
-        error_log("Searching notes for user ID: " . $user->getId());
-        
         $dql = 'SELECT n FROM App\Entity\Note n WHERE n.owner = :user';
-        $parameters = ['user' => $user];
+        $params = ['user' => $user];
         
-        if ($searchText !== null && $searchText !== '') {
+        if ($query) {
             $dql .= ' AND (LOWER(n.title) LIKE :q OR LOWER(n.content) LIKE :q)';
-            $parameters['q'] = '%' . mb_strtolower($searchText) . '%';
+            $params['q'] = '%' . mb_strtolower($query) . '%';
         }
         
-        if ($status !== null && $status !== '') {
+        if ($status) {
             $dql .= ' AND n.status = :status';
-            $parameters['status'] = $status;
+            $params['status'] = $status;
         }
         
-        if ($category !== null && $category !== '') {
+        if ($category) {
             $dql .= ' AND n.category = :category';
-            $parameters['category'] = $category;
+            $params['category'] = $category;
         }
         
         $dql .= ' ORDER BY n.id DESC';
         
-        $doctrineQuery = $this->getEntityManager()->createQuery($dql);
-        $doctrineQuery->setParameters($parameters);
-        
-        $results = $doctrineQuery->getResult();
-        error_log("Found " . count($results) . " notes");
-        
-        return $results;
+        return $this->getEntityManager()
+            ->createQuery($dql)
+            ->setParameters($params)
+            ->getResult();
     }
 }
 
