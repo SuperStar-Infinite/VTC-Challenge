@@ -69,6 +69,7 @@ class NoteRepository extends ServiceEntityRepository
     ): array {
         error_log("Searching notes for user ID: " . $user->getId());
         
+        // Build DQL string
         $dql = 'SELECT n FROM App\Entity\Note n WHERE n.owner = :user';
         $parameters = ['user' => $user];
         
@@ -89,6 +90,7 @@ class NoteRepository extends ServiceEntityRepository
         
         $dql .= ' ORDER BY n.id DESC';
         
+        // Use same query style as controller
         $query = $this->getEntityManager()->createQuery($dql);
         $query->setParameters($parameters);
         
