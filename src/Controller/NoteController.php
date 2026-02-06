@@ -30,6 +30,15 @@ class NoteController extends AbstractController
             return $this->json(null, Response::HTTP_UNAUTHORIZED);
         }
 
+        error_log("Current user ID: " . $user->getId());
+
+        $rawQuery = $this->em->createQuery(
+            'SELECT n FROM App\Entity\Note n WHERE n.owner = :user'
+        )->setParameter('user', $user);
+        
+        $rawResults = $rawQuery->getResult();
+        error_log("RAW QUERY found " . count($rawResults) . " notes");
+
         $query = $request->query->get('q');
         $status = $request->query->get('status');
         $category = $request->query->get('category');
