@@ -21,6 +21,46 @@ class NoteRepository extends ServiceEntityRepository
     /**
      * @return Note[]
      */
+    // public function searchForUser(
+    //     User $user,
+    //     ?string $query,
+    //     ?string $status,
+    //     ?string $category
+    // ): array {
+    //     error_log("Searching notes for user ID: " . $user->getId());
+
+    //     $qb = $this->createQueryBuilder('n')
+    //         ->join('n.owner', 'u')
+    //         ->andWhere('u.id = :ownerId')
+    //         ->setParameter('ownerId', $user->getId())
+    //         ->orderBy('n.id', 'DESC');
+
+    //     if ($query !== null && $query !== '') {
+    //         $qb
+    //             ->andWhere('LOWER(n.title) LIKE :q OR LOWER(n.content) LIKE :q')
+    //             ->setParameter('q', '%' . mb_strtolower($query) . '%');
+    //     }
+
+    //     if ($status !== null && $status !== '') {
+    //         $qb
+    //             ->andWhere('n.status = :status')
+    //             ->setParameter('status', $status);
+    //     }
+
+    //     if ($category !== null && $category !== '') {
+    //         $qb
+    //             ->andWhere('n.category = :category')
+    //             ->setParameter('category', $category);
+    //     }
+
+    //     $results = $qb->getQuery()->getResult();
+    
+    //     // DEBUG: Log how many notes found
+    //     error_log("Found " . count($results) . " notes");
+        
+    //     return $results;
+    // }
+
     public function searchForUser(
         User $user,
         ?string $query,
@@ -28,34 +68,31 @@ class NoteRepository extends ServiceEntityRepository
         ?string $category
     ): array {
         error_log("Searching notes for user ID: " . $user->getId());
-
-        $qb = $this->createQueryBuilder('n')
-            ->join('n.owner', 'u')
-            ->andWhere('u.id = :ownerId')
-            ->setParameter('ownerId', $user->getId())
-            ->orderBy('n.id', 'DESC');
-
+        
+        $dql = 'SELECT n FROM App\Entity\Note n WHERE n.owner = :user';
+        $parameters = ['user' => $user];
+        
         if ($query !== null && $query !== '') {
-            $qb
-                ->andWhere('LOWER(n.title) LIKE :q OR LOWER(n.content) LIKE :q')
-                ->setParameter('q', '%' . mb_strtolower($query) . '%');
+            $dql .= ' AND (LOWER(n.title) LIKE :q OR LOWER(n.content) LIKE :q)';
+            $parameters['q'] = '%' . mb_strtolower($query) . '%';
         }
-
+        
         if ($status !== null && $status !== '') {
-            $qb
-                ->andWhere('n.status = :status')
-                ->setParameter('status', $status);
+            $dql .= ' AND n.status = :status';
+            $parameters['status'] = $status;
         }
-
+        
         if ($category !== null && $category !== '') {
-            $qb
-                ->andWhere('n.category = :category')
-                ->setParameter('category', $category);
+            $dql .= ' AND n.category = :category';
+            $parameters['category'] = $category;
         }
-
-        $results = $qb->getQuery()->getResult();
-    
-        // DEBUG: Log how many notes found
+        
+        $dql .= ' ORDER BY n.id DESC';
+        
+        $query = $this->getEntityManager()->createQuery($dql);
+        $query->setParameters($parameters);
+        
+        $results = $query->getResult();
         error_log("Found " . count($results) . " notes");
         
         return $results;
