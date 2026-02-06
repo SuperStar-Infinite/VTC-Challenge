@@ -23,6 +23,7 @@ security:
                 success_handler: Symfony\Component\Security\Http\Authentication\DefaultAuthenticationSuccessHandler
             logout:
                 path: /api/logout
+                target: /
                 invalidate_session: true
 
     # Easy way to control access for large sections of your site
